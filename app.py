@@ -233,7 +233,7 @@ with st.sidebar:
     col_a, col_b = st.columns(2)
     xmin = col_a.number_input("Inicio", value=-5.0, step=0.5)
     xmax = col_b.number_input("Final", value=5.0, step=0.5)
-    st.info("Consejo docente: reproduce primero la secante y luego la tangente móvil.")
+    st.info("Explora diferentes funciones y compara sus representaciones algebraica, numérica y geométrica.")
 
 if xmin >= xmax:
     st.error("El inicio del intervalo debe ser menor que el final.")
@@ -264,8 +264,14 @@ m1.metric("x₀", f"{x0:.4g}")
 m2.metric("f(x₀)", f"{value_at_x0:.6g}")
 m3.metric("f′(x₀) = pendiente", f"{derivative_at_x0:.6g}")
 
-tab_static, tab_secant, tab_tangent, tab_guide = st.tabs(
-    ["Gráfica estática", "Secante → tangente", "Tangente móvil", "Guía didáctica"]
+tab_static, tab_secant, tab_tangent, tab_lab, tab_project = st.tabs(
+    [
+        "Gráfica estática",
+        "Secante → tangente",
+        "Tangente móvil",
+        "Actividad de laboratorio",
+        "Proyecto Valle Alto",
+    ]
 )
 
 with tab_static:
@@ -283,18 +289,146 @@ with tab_tangent:
     st.write("La recta tangente y su punto de contacto recorren el intervalo seleccionado.")
     st.plotly_chart(tangent_animation(expression, derivative, xmin, xmax), width="stretch")
 
-with tab_guide:
-    st.subheader("Secuencia sugerida para una demostración de 15 minutos")
+with tab_lab:
+    st.subheader("Actividad de laboratorio: la derivada como razón de cambio")
     st.markdown(
-        """
-        1. **Predicción:** pregunta qué representa la pendiente en un punto (2 min).
-        2. **Cálculo simbólico:** compara la función con su derivada (3 min).
-        3. **Aproximación:** reproduce la animación de secantes y explica el límite (4 min).
-        4. **Interpretación geométrica:** reproduce la tangente móvil (3 min).
-        5. **Exploración:** cambia la función o el punto y pide una conclusión (3 min).
+        r"""
+        **Objetivo:** relacionar la derivada con la pendiente de la recta tangente y
+        comprenderla como el límite de las pendientes de rectas secantes.
+
+        1. Introduce la función `x^3 - 3*x` y selecciona el intervalo \([-3,3]\).
+        2. Establece \(x_0=1\) y predice si la pendiente será positiva, negativa o cero.
+        3. Registra la expresión de \(f'(x)\), \(f(x_0)\), \(f'(x_0)\) y la ecuación
+           de la recta tangente.
+        4. Reproduce **Secante → tangente**. Describe qué ocurre con la pendiente
+           cuando \(h\) se aproxima a cero.
+        5. Reproduce **Tangente móvil** e identifica los intervalos donde la función
+           crece, decrece o tiene tangente horizontal.
+        6. Elige otra función y repite el análisis en un punto diferente.
         """
     )
-    st.warning("Las discontinuidades y los puntos donde la derivada no existe deben analizarse por separado.")
+    st.markdown("#### Preguntas de reflexión")
+    st.markdown(
+        r"""
+        - ¿Qué relación existe entre el signo de \(f'(x)\) y el comportamiento de la función?
+        - ¿Qué significa geométricamente que \(f'(x_0)=0\)?
+        - ¿Puede una función continua no ser derivable en algún punto? Explica con un ejemplo.
+        - ¿Cómo intervienen las rectas secantes en la definición de la derivada?
+        """
+    )
+    st.success(
+        "Producto: entrega una captura de la gráfica, los cálculos solicitados y una conclusión breve."
+    )
+
+with tab_project:
+    st.subheader("Proyecto de clase: captación pluvial en Valle Alto")
+    st.markdown(
+        r"""
+        **Reto:** diseñar un tanque cilíndrico cerrado que almacene agua de lluvia
+        utilizando la menor cantidad posible de material.
+
+        PrepaTec Valle Alto se ubica en La Estanzuela, sobre Carretera Nacional.
+        El proyecto conecta el cálculo diferencial con la resiliencia hídrica de
+        Nuevo León, donde ya se han instalado sistemas comunitarios de captación
+        pluvial con depósitos de 10 000 litros.
+
+        Si el volumen del tanque es \(V\), su radio es \(r\) y su altura es \(h\):
+        """
+    )
+    st.latex(r"V=\pi r^2h \qquad\Longrightarrow\qquad h=\frac{V}{\pi r^2}")
+    st.markdown("El área total de un cilindro cerrado puede escribirse únicamente en función del radio:")
+    st.latex(r"A(r)=2\pi r^2+2\pi rh=2\pi r^2+\frac{2V}{r}")
+
+    project_col, result_col = st.columns([1, 1.35])
+    with project_col:
+        volume_liters = st.number_input(
+            "Capacidad del tanque (litros)",
+            min_value=1000,
+            max_value=50000,
+            value=10000,
+            step=1000,
+            key="project_volume",
+        )
+        volume_m3 = volume_liters / 1000.0
+        optimal_r = (volume_m3 / (2 * np.pi)) ** (1 / 3)
+        optimal_h = volume_m3 / (np.pi * optimal_r**2)
+        minimum_area = 2 * np.pi * optimal_r**2 + 2 * volume_m3 / optimal_r
+
+        st.markdown("**Función para explorar en la aplicación:**")
+        project_expression = f"2*pi*x^2 + {2 * volume_m3:g}/x"
+        st.code(project_expression, language=None)
+        st.caption("En esta expresión, x representa el radio en metros.")
+
+    with result_col:
+        r_values = np.linspace(max(0.15, optimal_r * 0.25), optimal_r * 3.0, 500)
+        areas = 2 * np.pi * r_values**2 + 2 * volume_m3 / r_values
+        project_fig = go.Figure()
+        project_fig.add_trace(
+            go.Scatter(
+                x=r_values,
+                y=areas,
+                name="Área del tanque",
+                line={"color": TEC_BLUE, "width": 3},
+            )
+        )
+        project_fig.add_trace(
+            go.Scatter(
+                x=[optimal_r],
+                y=[minimum_area],
+                name="Diseño óptimo",
+                mode="markers",
+                marker={"size": 13, "color": ORANGE},
+            )
+        )
+        project_fig.update_layout(
+            **{
+                **common_layout("Área de material en función del radio", float(r_values[0]), float(r_values[-1])),
+                "height": 430,
+                "xaxis": {
+                    "title": "Radio r (m)",
+                    "range": [float(r_values[0]), float(r_values[-1])],
+                    "gridcolor": GRID,
+                },
+                "yaxis": {"title": "Área A(r) (m²)", "gridcolor": GRID},
+            }
+        )
+        st.plotly_chart(project_fig, width="stretch")
+
+    st.markdown("#### Resultado del modelo")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Radio óptimo", f"{optimal_r:.3f} m")
+    c2.metric("Altura óptima", f"{optimal_h:.3f} m")
+    c3.metric("Área mínima", f"{minimum_area:.3f} m²")
+
+    with st.expander("Verificación con derivadas"):
+        st.latex(r"A'(r)=4\pi r-\frac{2V}{r^2}")
+        st.latex(r"A'(r)=0 \quad\Longrightarrow\quad r=\sqrt[3]{\frac{V}{2\pi}}")
+        st.latex(r"A''(r)=4\pi+\frac{4V}{r^3}>0")
+        st.write(
+            "Como la segunda derivada es positiva, el punto crítico corresponde a un mínimo. "
+            "Para un cilindro cerrado óptimo se cumple además que h = 2r."
+        )
+
+    st.markdown("#### Entregable del proyecto")
+    st.markdown(
+        r"""
+        1. Justifica la función \(A(r)\) a partir de las fórmulas de volumen y área.
+        2. Determina el radio y la altura que minimizan el material para 10 000 litros.
+        3. Comprueba que el punto crítico es un mínimo mediante \(A''(r)\).
+        4. Compara el diseño de 10 000 litros con otra capacidad y explica el cambio.
+        5. Analiza dos factores reales que el modelo simplifica: costo, espesor,
+           estructura, filtración, mantenimiento o calidad del agua.
+        """
+    )
+    st.caption(
+        "Modelo académico. La construcción de un sistema real requiere evaluación estructural, "
+        "hidráulica, sanitaria y de seguridad."
+    )
+    st.markdown(
+        "**Contexto:** [ubicación de PrepaTec Valle Alto](https://protect.tec.mx/es/vl) · "
+        "[sistemas de captación en Nuevo León](https://www.nl.gob.mx/es/boletines/"
+        "inaugura-igualdad-e-inclusion-centro-de-captacion-de-agua-en-la-alianza)"
+    )
 
 st.divider()
 st.caption("Recurso educativo interactivo · Cálculo diferencial")
